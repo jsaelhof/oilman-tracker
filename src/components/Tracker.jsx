@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { map } from "lodash";
-import { formatMoney } from "accounting-js";
 
 const L1 = "Level 1";
 const L2 = "Level 2";
@@ -56,6 +55,7 @@ export const Tracker = ({ name }) => {
   const [cash, setCash] = useState(100000);
   const [salary, setSalary] = useState(5000);
   const [pendingAdjustment, setPendingAjustment] = useState();
+  const [adjustmentInput, setAdjustmentInput] = useState("");
 
   const buildDrillButton = (cost, level, adjustment) =>
     buildButton(
@@ -75,13 +75,22 @@ export const Tracker = ({ name }) => {
         border: "1px solid grey",
         borderRadius: 8,
         padding: 16,
-        width: "fit-content",
+        width: 240,
+        height: "fit-content",
       }}
     >
       <div style={{ fontWeight: "bold" }}>{name}</div>
-      <div style={{ display: "flex", gap: 16, margin: `${8}px 0 ${16}px` }}>
-        <div>Cash: {formatMoney(cash)}</div>
-        <div>Salary: {formatMoney(salary)}</div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          margin: "16px 0 24px",
+        }}
+      >
+        <div>Cash: ${cash / 1000}k</div>
+        <div>Salary: ${salary / 1000}k</div>
+        <div>Net Worth: ${(cash + salary * 10) / 1000}k</div>
       </div>
 
       {phase === 0 && (
@@ -90,6 +99,43 @@ export const Tracker = ({ name }) => {
             setCash(cash + salary);
             setPhase(1);
           })}
+          <div style={{ fontSize: 12, margin: "24px 0 4px" }}>Adjust Cash</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              type="text"
+              value={adjustmentInput}
+              maxLength={6}
+              style={{ width: 50 }}
+              onChange={(e) => {
+                setAdjustmentInput(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (
+                  ![8, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57].includes(
+                    e.keyCode
+                  )
+                ) {
+                  e.preventDefault();
+                }
+              }}
+            />
+            <input
+              type="button"
+              value="-"
+              onClick={() => {
+                setCash(cash - parseInt(adjustmentInput));
+                setAdjustmentInput("");
+              }}
+            />
+            <input
+              type="button"
+              value="+"
+              onClick={() => {
+                setCash(cash + parseInt(adjustmentInput));
+                setAdjustmentInput("");
+              }}
+            />
+          </div>
         </div>
       )}
 
