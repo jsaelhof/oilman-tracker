@@ -38,19 +38,31 @@ const salaryAdjustments = {
   },
 };
 
-const buildButton = (value, onClick, key, disabled = false) => (
-  <input
+const PHASE = {
+  COLLECT_SALARY: 0,
+  DRILL: 1,
+  ADJUST_SALARY: 2,
+};
+
+const format = (val) => `$${val / 1000}k`;
+
+const buildButton = (label, onClick, key, disabled = false) => (
+  <button
     key={key}
-    type="button"
-    value={value}
     onClick={onClick}
-    style={{ margin: 8, minWidth: 100 }}
+    style={{
+      margin: 8,
+      minWidth: 100,
+      whiteSpace: "normal",
+    }}
     disabled={disabled}
-  />
+  >
+    {label}
+  </button>
 );
 
 export const Tracker = ({ name }) => {
-  const [phase, setPhase] = useState(0);
+  const [phase, setPhase] = useState(PHASE.COLLECT_SALARY);
   const [cash, setCash] = useState(100000);
   const [salary, setSalary] = useState(5000);
   const [drillLevel, setDrillLevel] = useState();
@@ -58,11 +70,14 @@ export const Tracker = ({ name }) => {
 
   const buildDrillButton = (level, surface) =>
     buildButton(
-      `${level}`,
+      <>
+        <div>{level}</div>
+        <div>${drillCosts[surface][level]}</div>
+      </>,
       () => {
         setCash(cash - drillCosts[surface][level]);
         setDrillLevel({ level, surface });
-        setPhase(2);
+        setPhase(PHASE.ADJUST_SALARY);
       },
       level,
       drillCosts[surface][level] > cash
@@ -87,16 +102,16 @@ export const Tracker = ({ name }) => {
           margin: "16px 0 24px",
         }}
       >
-        <div>Cash: ${cash / 1000}k</div>
-        <div>Salary: ${salary / 1000}k</div>
-        <div>Net Worth: ${(cash + salary * 10) / 1000}k</div>
+        <div>Cash: {format(cash)}</div>
+        <div>Salary: {format(salary)}</div>
+        <div>Net Worth: {format(cash + salary * 10)}</div>
       </div>
 
-      {phase === 0 && (
+      {phase === PHASE.COLLECT_SALARY && (
         <div>
           {buildButton("Collect Salary", () => {
             setCash(cash + salary);
-            setPhase(1);
+            setPhase(PHASE.DRILL);
           })}
           <div style={{ fontSize: 12, margin: "24px 0 4px" }}>Adjust Cash</div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -138,62 +153,86 @@ export const Tracker = ({ name }) => {
         </div>
       )}
 
-      {phase === 1 && (
-        <div style={{ display: "flex" }}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <div>{ON_LAND}</div>
-            {Object.keys(drillCosts[ON_LAND]).map((level) =>
-              buildDrillButton(level, ON_LAND)
-            )}
+      {phase === PHASE.DRILL && (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <div>{ON_LAND}</div>
+              {Object.keys(drillCosts[ON_LAND]).map((level) =>
+                buildDrillButton(level, ON_LAND)
+              )}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <div>{OFF_SHORE}</div>
+              {Object.keys(drillCosts[OFF_SHORE]).map((level) =>
+                buildDrillButton(level, OFF_SHORE)
+              )}
+            </div>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <div>{OFF_SHORE}</div>
-            {Object.keys(drillCosts[OFF_SHORE]).map((level) =>
-              buildDrillButton(level, OFF_SHORE)
-            )}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            {buildButton("Back", () => {
+              setPhase(PHASE.COLLECT_SALARY);
+              setCash(cash - salary);
+            })}
           </div>
-        </div>
+        </>
       )}
 
-      {phase === 2 && (
-        <div style={{ display: "flex" }}>
-          {/* 
+      {phase === PHASE.ADJUST_SALARY && (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            {/* 
             If the player is drilling 1st-to-3rd or Full Depth, then they can hit any of the 
             three levels and get the corresponding salary. In this case, show 3 buttons.
            */}
-          <div>
-            {([L1_TO_3, FULL_DEPTH].includes(drillLevel.level)
-              ? [L1, L2, L3]
-              : [drillLevel.level]
-            ).map((level) =>
-              buildButton(`Hit - ${level}`, () => {
-                setSalary(
-                  salary + salaryAdjustments[drillLevel.surface][level]
-                );
-                setPhase(0);
-              })
-            )}
+            <div>
+              {([L1_TO_3, FULL_DEPTH].includes(drillLevel.level)
+                ? [L1, L2, L3]
+                : [drillLevel.level]
+              ).map((level) =>
+                buildButton(
+                  <>
+                    <div>Hit - {level}</div>
+                    <div>${salaryAdjustments[drillLevel.surface][level]}</div>
+                  </>,
+                  () => {
+                    setSalary(
+                      salary + salaryAdjustments[drillLevel.surface][level]
+                    );
+                    setPhase(PHASE.COLLECT_SALARY);
+                  }
+                )
+              )}
+            </div>
+
+            <div>
+              {buildButton("Dry", () => {
+                setPhase(PHASE.COLLECT_SALARY);
+              })}
+            </div>
           </div>
 
-          <div>
-            {buildButton("Dry", () => {
-              setPhase(0);
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            {buildButton("Back", () => {
+              setPhase(PHASE.DRILL);
+              setCash(cash + drillCosts[drillLevel.surface][drillLevel.level]);
             })}
           </div>
-        </div>
+        </>
       )}
     </div>
   );
