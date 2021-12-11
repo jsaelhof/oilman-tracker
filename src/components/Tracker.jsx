@@ -1,87 +1,40 @@
 import { useState } from "react";
-
-const L1 = "Level 1";
-const L2 = "Level 2";
-const L3 = "Level 3";
-const L1_TO_3 = "1st to 3rd";
-const FULL_DEPTH = "Full Depth";
-const ON_LAND = "On Land";
-const OFF_SHORE = "Off Shore";
-
-const drillCosts = {
-  [ON_LAND]: {
-    [L1]: 5000,
-    [L2]: 15000,
-    [L3]: 30000,
-    [L1_TO_3]: 50000,
-    [FULL_DEPTH]: 75000,
-  },
-  [OFF_SHORE]: {
-    [L1]: 15000,
-    [L2]: 30000,
-    [L3]: 45000,
-    [L1_TO_3]: 85000,
-    [FULL_DEPTH]: 125000,
-  },
-};
-
-const salaryAdjustments = {
-  [ON_LAND]: {
-    [L1]: 2000,
-    [L2]: 5000,
-    [L3]: 10000,
-  },
-  [OFF_SHORE]: {
-    [L1]: 5000,
-    [L2]: 10000,
-    [L3]: 15000,
-  },
-};
-
-const PHASE = {
-  COLLECT_SALARY: 0,
-  DRILL: 1,
-  ADJUST_SALARY: 2,
-};
-
-const format = (val) => `$${val / 1000}k`;
-
-const buildButton = (label, onClick, key, disabled = false) => (
-  <button
-    key={key}
-    onClick={onClick}
-    style={{
-      margin: 8,
-      minWidth: 100,
-      whiteSpace: "normal",
-    }}
-    disabled={disabled}
-  >
-    {label}
-  </button>
-);
+import {
+  drillCosts,
+  FULL_DEPTH,
+  L1,
+  L2,
+  L3,
+  L1_TO_3,
+  OFF_SHORE,
+  ON_LAND,
+  phase,
+  salaryAdjustments,
+} from "../constants/game";
+import { format } from "../utils/format";
+import BackButton from "./BackButton";
+import Button from "./Button";
+import CashButton from "./CashButton";
 
 export const Tracker = ({ name }) => {
-  const [phase, setPhase] = useState(PHASE.COLLECT_SALARY);
+  const [gamePhase, setGamePhase] = useState(phase.COLLECT_SALARY);
   const [cash, setCash] = useState(100000);
   const [salary, setSalary] = useState(5000);
   const [drillLevel, setDrillLevel] = useState();
   const [adjustmentInput, setAdjustmentInput] = useState("");
 
-  const buildDrillButton = (level, surface) =>
-    buildButton(
-      <>
-        <div>{level}</div>
-        <div>${drillCosts[surface][level]}</div>
-      </>,
-      () => {
+  const buildDrillButton = (level, surface) => (
+    <CashButton
+      level={level}
+      cash={drillCosts[surface][level]}
+      onClick={() => {
         setCash(cash - drillCosts[surface][level]);
         setDrillLevel({ level, surface });
-        setPhase(PHASE.ADJUST_SALARY);
-      },
-      level,
-      drillCosts[surface][level] > cash
-    );
+        setGamePhase(phase.ADJUST_SALARY);
+      }}
+      disabled={drillCosts[surface][level] > cash}
+    />
+  );
 
   return (
     <div
@@ -107,12 +60,16 @@ export const Tracker = ({ name }) => {
         <div>Net Worth: {format(cash + salary * 10)}</div>
       </div>
 
-      {phase === PHASE.COLLECT_SALARY && (
+      {gamePhase === phase.COLLECT_SALARY && (
         <div>
-          {buildButton("Collect Salary", () => {
-            setCash(cash + salary);
-            setPhase(PHASE.DRILL);
-          })}
+          <Button
+            onClick={() => {
+              setCash(cash + salary);
+              setGamePhase(phase.DRILL);
+            }}
+          >
+            Collect Salary
+          </Button>
           <div style={{ fontSize: 12, margin: "24px 0 4px" }}>Adjust Cash</div>
           <div style={{ display: "flex", gap: 8 }}>
             <input
@@ -153,7 +110,7 @@ export const Tracker = ({ name }) => {
         </div>
       )}
 
-      {phase === PHASE.DRILL && (
+      {gamePhase === phase.DRILL && (
         <>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <div
@@ -184,15 +141,17 @@ export const Tracker = ({ name }) => {
           </div>
 
           <div style={{ display: "flex", justifyContent: "center" }}>
-            {buildButton("Back", () => {
-              setPhase(PHASE.COLLECT_SALARY);
-              setCash(cash - salary);
-            })}
+            <BackButton
+              onClick={() => {
+                setGamePhase(phase.COLLECT_SALARY);
+                setCash(cash - salary);
+              }}
+            />
           </div>
         </>
       )}
 
-      {phase === PHASE.ADJUST_SALARY && (
+      {gamePhase === phase.ADJUST_SALARY && (
         <>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             {/* 
@@ -203,34 +162,40 @@ export const Tracker = ({ name }) => {
               {([L1_TO_3, FULL_DEPTH].includes(drillLevel.level)
                 ? [L1, L2, L3]
                 : [drillLevel.level]
-              ).map((level) =>
-                buildButton(
-                  <>
-                    <div>Hit - {level}</div>
-                    <div>${salaryAdjustments[drillLevel.surface][level]}</div>
-                  </>,
-                  () => {
+              ).map((level) => (
+                <CashButton
+                  level={`Hit - ${level}`}
+                  cash={salaryAdjustments[drillLevel.surface][level]}
+                  onClick={() => {
                     setSalary(
                       salary + salaryAdjustments[drillLevel.surface][level]
                     );
-                    setPhase(PHASE.COLLECT_SALARY);
-                  }
-                )
-              )}
+                    setGamePhase(phase.COLLECT_SALARY);
+                  }}
+                />
+              ))}
             </div>
 
             <div>
-              {buildButton("Dry", () => {
-                setPhase(PHASE.COLLECT_SALARY);
-              })}
+              <Button
+                onClick={() => {
+                  setGamePhase(phase.COLLECT_SALARY);
+                }}
+              >
+                Dry
+              </Button>
             </div>
           </div>
 
           <div style={{ display: "flex", justifyContent: "center" }}>
-            {buildButton("Back", () => {
-              setPhase(PHASE.DRILL);
-              setCash(cash + drillCosts[drillLevel.surface][drillLevel.level]);
-            })}
+            <BackButton
+              onClick={() => {
+                setGamePhase(phase.DRILL);
+                setCash(
+                  cash + drillCosts[drillLevel.surface][drillLevel.level]
+                );
+              }}
+            />
           </div>
         </>
       )}
