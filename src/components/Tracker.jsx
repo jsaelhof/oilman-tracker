@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { map } from "lodash";
 
 const L1 = "Level 1";
 const L2 = "Level 2";
@@ -14,7 +13,7 @@ const drillCosts = {
     [L1]: 5000,
     [L2]: 15000,
     [L3]: 30000,
-    [L1_TO_3]: 45000,
+    [L1_TO_3]: 50000,
     [FULL_DEPTH]: 75000,
   },
   [OFF_SHORE]: {
@@ -54,19 +53,19 @@ export const Tracker = ({ name }) => {
   const [phase, setPhase] = useState(0);
   const [cash, setCash] = useState(100000);
   const [salary, setSalary] = useState(5000);
-  const [pendingAdjustment, setPendingAjustment] = useState();
+  const [drillLevel, setDrillLevel] = useState();
   const [adjustmentInput, setAdjustmentInput] = useState("");
 
-  const buildDrillButton = (cost, level, adjustment) =>
+  const buildDrillButton = (level, surface) =>
     buildButton(
       `${level}`,
       () => {
-        setCash(cash - cost);
-        setPendingAjustment(adjustment);
+        setCash(cash - drillCosts[surface][level]);
+        setDrillLevel({ level, surface });
         setPhase(2);
       },
       level,
-      cost > cash
+      drillCosts[surface][level] > cash
     );
 
   return (
@@ -149,8 +148,8 @@ export const Tracker = ({ name }) => {
             }}
           >
             <div>{ON_LAND}</div>
-            {map(drillCosts[ON_LAND], (cost, level) =>
-              buildDrillButton(cost, level, salaryAdjustments[ON_LAND][level])
+            {Object.keys(drillCosts[ON_LAND]).map((level) =>
+              buildDrillButton(level, ON_LAND)
             )}
           </div>
 
@@ -162,21 +161,34 @@ export const Tracker = ({ name }) => {
             }}
           >
             <div>{OFF_SHORE}</div>
-            {map(drillCosts[OFF_SHORE], (cost, level) =>
-              buildDrillButton(cost, level, salaryAdjustments[OFF_SHORE][level])
+            {Object.keys(drillCosts[OFF_SHORE]).map((level) =>
+              buildDrillButton(level, OFF_SHORE)
             )}
           </div>
         </div>
       )}
 
       {phase === 2 && (
-        <div>
+        <div style={{ display: "flex" }}>
+          {/* 
+            If the player is drilling 1st-to-3rd or Full Depth, then they can hit any of the 
+            three levels and get the corresponding salary. In this case, show 3 buttons.
+           */}
           <div>
-            {buildButton("Hit", () => {
-              setSalary(salary + pendingAdjustment);
-              setPhase(0);
-            })}
+            {([L1_TO_3, FULL_DEPTH].includes(drillLevel.level)
+              ? [L1, L2, L3]
+              : [drillLevel.level]
+            ).map((level) =>
+              buildButton(`Hit - ${level}`, () => {
+                setSalary(
+                  salary + salaryAdjustments[drillLevel.surface][level]
+                );
+                setPhase(0);
+              })
+            )}
+          </div>
 
+          <div>
             {buildButton("Dry", () => {
               setPhase(0);
             })}
