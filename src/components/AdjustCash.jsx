@@ -4,6 +4,14 @@ import { AdjustmentInput, Controls, Label } from "./AdjustCash.styles";
 const AdjustCash = ({ onChange }) => {
   const [adjustmentInput, setAdjustmentInput] = useState("");
 
+  const adjust = (multiplier = 1) => {
+    const val = parseInt(adjustmentInput) * multiplier;
+    if (!isNaN(val)) {
+      onChange(val);
+      setAdjustmentInput("");
+    }
+  };
+
   return (
     <>
       <Label>Adjust Cash</Label>
@@ -27,16 +35,14 @@ const AdjustCash = ({ onChange }) => {
           type="button"
           value="-"
           onClick={() => {
-            onChange(-parseInt(adjustmentInput));
-            setAdjustmentInput("");
+            adjust(-1);
           }}
         />
         <input
           type="button"
           value="+"
           onClick={() => {
-            onChange(parseInt(adjustmentInput));
-            setAdjustmentInput("");
+            adjust();
           }}
         />
       </Controls>
