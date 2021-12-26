@@ -12,10 +12,11 @@ import {
   salaryAdjustments,
 } from "../constants/game";
 import { format } from "../utils/format";
-import AdjustCash from "./AdjustCash";
+import ManualAdjustment from "./ManualAdjustment";
 import BackButton from "./BackButton";
 import Button from "./Button";
 import CashButton from "./CashButton";
+import DrawNewLand from "./DrawNewLand";
 import {
   PlayerStats,
   Player,
@@ -24,6 +25,7 @@ import {
   ColumnLayout,
   ActionsLayout,
 } from "./Tracker.styles";
+import ManualAdjustments from "./ManualAdjustments";
 
 export const Tracker = ({ name }) => {
   const [gamePhase, setGamePhase] = useState(phase.COLLECT_SALARY);
@@ -64,7 +66,10 @@ export const Tracker = ({ name }) => {
             Collect Salary
           </Button>
 
-          <AdjustCash onChange={(adjustment) => setCash(cash + adjustment)} />
+          <ManualAdjustments
+            onAdjustCash={(adjustment) => setCash(cash + adjustment)}
+            onAdjustSalary={(adjustment) => setSalary(salary + adjustment)}
+          />
         </ActionsLayout>
       )}
 
@@ -85,6 +90,14 @@ export const Tracker = ({ name }) => {
               )}
             </ColumnLayout>
           </TwoColumnLayout>
+
+          <DrawNewLand
+            onClick={(auctionAmount) => {
+              // TODO: Amount of auction should be guarded to prevent going negative.
+              setCash(cash - auctionAmount);
+              setGamePhase(phase.COLLECT_SALARY);
+            }}
+          />
 
           <BackButton
             onClick={() => {
